@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="本文旨在帮助你了解如何使用Nginx解决跨域问题">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用Nginx解决跨域问题">
+<meta property="og:url" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/index.html">
+<meta property="og:site_name" content="团队技术分享博客">
+<meta property="og:description" content="本文旨在帮助你了解如何使用Nginx解决跨域问题">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/nginx.jpeg">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/url%E7%BB%84%E6%88%90.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98%E6%8A%A5%E9%94%99.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98%E6%BC%94%E7%A4%BA.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/nginx%E4%B8%8B%E8%BD%BD.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E8%A7%A3%E5%8E%8B%E5%8E%8B%E7%BC%A9%E5%8C%851.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E8%A7%A3%E5%8E%8B%E5%8E%8B%E7%BC%A9%E5%8C%852.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E5%90%AF%E5%8A%A8nginx.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E5%91%BD%E4%BB%A4%E6%93%8D%E4%BD%9C%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E6%88%90%E5%8A%9F%E7%99%BB%E5%BD%95%E5%88%B0nginx.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E6%AD%A3%E5%90%91%E4%BB%A3%E7%90%86.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/nginx%E9%85%8D%E7%BD%AE%E8%B7%AF%E5%BE%84.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E6%B5%8F%E8%A7%88%E5%99%A8%E8%AE%BF%E9%97%AE%E5%9C%B0%E5%9D%80.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E8%B0%83%E7%94%A8%E6%96%B9%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%E6%95%88%E6%9E%9C%E6%BC%94%E7%A4%BA.png">
+<meta property="og:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E8%B0%83%E7%94%A8%E6%96%B9Nginx%E9%85%8D%E7%BD%AE.png">
+<meta property="article:published_time" content="2023-03-05T01:19:13.000Z">
+<meta property="article:modified_time" content="2023-04-14T00:55:36.000Z">
+<meta property="article:author" content="team-manager">
+<meta property="article:tag" content="nginx">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/nginx.jpeg">
+
+<link rel="canonical" href="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>使用Nginx解决跨域问题 | 团队技术分享博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">团队技术分享博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">东区交付五部技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-schedule">
+
+    <a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="team-manager">
+      <meta itemprop="description" content="分享各小组的技术成果">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="团队技术分享博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          使用Nginx解决跨域问题
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-05 09:19:13" itemprop="dateCreated datePublished" datetime="2023-03-05T09:19:13+08:00">2023-03-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-04-14 08:55:36" itemprop="dateModified" datetime="2023-04-14T08:55:36+08:00">2023-04-14</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%B7%A5%E5%85%B7/" itemprop="url" rel="index"><span itemprop="name">工具</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文旨在帮助你了解如何使用Nginx解决跨域问题</p>
+<p><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/nginx.jpeg" alt="nginx.jpeg"></p>
+<span id="more"></span>
+<h2 id="Nginx的简单介绍"><a href="#Nginx的简单介绍" class="headerlink" title="Nginx的简单介绍"></a>Nginx的简单介绍</h2><p>HTTP和反向代理web服务器<br><a target="_blank" rel="noopener" href="https://www.w3cschool.cn/nginx/z5j11pds.html">Nginx (engine x)</a> 是一个高性能的HTTP和反向代理web服务器，同时也提供了IMAP&#x2F;POP3&#x2F;SMTP服务。Nginx是由伊戈尔·赛索耶夫为俄罗斯访问量第二的Rambler.ru站点（俄文：Рамблер）开发的，第一个公开版本0.1.0发布于2004年10月4日。<br>其将源代码以类BSD许可证的形式发布，因它的稳定性、丰富的功能集、示例配置文件和低系统资源的消耗而闻名。2011年6月1日，nginx 1.0.4发布。<br>Nginx是一款轻量级的Web 服务器&#x2F;反向代理服务器及电子邮件（IMAP&#x2F;POP3）代理服务器，在BSD-like 协议下发行。其特点是占有内存少，并发能力强，事实上nginx的并发能力在同类型的网页服务器中表现较好，中国大陆使用nginx网站用户有：百度、京东、新浪、网易、腾讯、淘宝等。</p>
+<p>特点:<br>1.占用内存少 tomcat服务器启动200M Nginx服务器启动时 2M<br>2.并发能力强 tomcat并发能力150-200左右 Nginx并发能力 3-5万&#x2F;秒<br>3.Nginx主要的功能做反向代理<br>4.Nginx可以作为负载均衡服务器使用</p>
+<p>这里介绍使用Nginx的反向代理的功能来解决跨域问题。</p>
+<h3 id="Nginx命令"><a href="#Nginx命令" class="headerlink" title="Nginx命令"></a>Nginx命令</h3><p>说明: nginx的命令要求在nginx.exe所在的目录中执行.</p>
+<p>1).启动命令 start nginx<br>2).重启命令 nginx -s reload<br>3).关闭命令 nginx -s stop</p>
+<p>热启动<br>Nginx 是支持热启动的，也就是说当我们修改配置文件后，不用关闭 Nginx，就可以实现让配置生效。</p>
+<p>Nginx 从新读取配置的命令是：</p>
+<p>nginx -s reload</p>
+<p>Windows 下面就是：</p>
+<p>nginx.exe -s reload</p>
+<h2 id="什么是跨域？"><a href="#什么是跨域？" class="headerlink" title="什么是跨域？"></a>什么是跨域？</h2><p>跨域，是指浏览器不能执行其他网站的脚本。它是由浏览器的同源策略造成的，是浏览器对JavaScript实施的安全限制。</p>
+<h3 id="什么是同源策略？"><a href="#什么是同源策略？" class="headerlink" title="什么是同源策略？"></a>什么是同源策略？</h3><p>同源策略是一种约定，由Netscape公司1995年引入浏览器，它是浏览器最核心也最基本的安全功能，如果缺少了同源策略，浏览器很容易受到XSS、CSFR等攻击。所谓同源是指”协议+域名+端口”三者相同，即便两个不同的域名指向同一个ip地址，也非同源。</p>
+<p>URL组成：<br><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/url%E7%BB%84%E6%88%90.png" alt="url组成.png"></p>
+<p>同源策略限制以下几种行为：</p>
+<p>Cookie、LocalStorage 和 IndexDB 无法读取<br>DOM和JS对象无法获得<br>AJAX 请求不能发送</p>
+<h4 id="同源策略在防什么"><a href="#同源策略在防什么" class="headerlink" title="同源策略在防什么"></a>同源策略在防什么</h4><p>跨域只存在于浏览器端。而浏览器为 web 提供访问入口。我们在可以浏览器内打开很多页面。正是这样的开放形态，所以我们需要对他有所限制。就比如林子大了，什么鸟都有，我们需要有一个统一的规范来进行约定才能保障这个安全性。</p>
+<p>限制不同源的请求，防止JavaScript代码对非同源页面的各种请求（CSRF攻击）<br>例如用户登录 a 网站，同时新开 tab 打开了 b 网站，如果不限制同源， b 可以像 a 网站发起任何请求，会让不法分子有机可趁。<br>限制 dom 操作，对其他页面DOM元素（通常包含敏感信息，比如input标签）的读取（）<br>钓鱼网站</p>
+<h3 id="跨域问题解决方案"><a href="#跨域问题解决方案" class="headerlink" title="跨域问题解决方案"></a>跨域问题解决方案</h3><p>总结来说：</p>
+<p>跨域是浏览器的安全策略造成的，但其也是必要的，不能为了方便而放弃安全性<br>跨域是不同源的请求导致的：IP、域名、端口等不同都会造成跨域<br>跨域的判断是由请求头和响应头的相关字段进行判断的，这个是设置的基础</p>
+<p>那解决方法目前看来有三个：</p>
+<p>前端层面自己解决：前端请求时自己进行代理<br>网关层面进行解决：在nginx、kong同统一网关中进行配置解决<br>服务后台解决：在Go、Java Web中进行配置解决，经典的<a target="_blank" rel="noopener" href="http://www.ruanyifeng.com/blog/2016/04/cors.html">Cors</a>配置</p>
+<p>我们这边介绍使用nginx在统一网关中进行配置解决，<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_39903567/article/details/115532420">其他跨域解决方案</a>可以自己有空看看，这里不再多做介绍。相比其他解决方案，因为nginx使用很方便，搭建一个服务器，直接在服务器端请求HTTP接口，这适合前后端分离的前端项目调后端接口。</p>
+<p>但注意的是，有时候是只能使用一样跨域解决方式的，最终的效果是需要保证最后前端收到的请求头符合规范,特别是下面这个头：<br>Access-Control-Allow-Origin: *<br>如果返回的响应头里面少了会跨域，但多了，比如返回了两个相同的，也会跨域<br>注：在实际开发中，如果发生跨域，排查的第一步就是看看响应头里面是否返回了正确的数据，这样就能精确的进行下一步的解决操作</p>
+<p>下面，举几个跨域的栗子：</p>
+<table>
+<thead>
+<tr>
+<th>url</th>
+<th>说明</th>
+<th>是否允许通信</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a target="_blank" rel="noopener" href="http://www.demo.com/a.js;http://www.demo.com/b.js;http://www.demo.com/lab/c.js">http://www.demo.com/a.js;http://www.demo.com/b.js;http://www.demo.com/lab/c.js</a></td>
+<td>同一域名，不同文件或路径</td>
+<td>允许</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="http://www.demo.com:8000/a.js;http://www.demo.com/b.js">http://www.demo.com:8000/a.js;http://www.demo.com/b.js</a></td>
+<td>同一域名，不同端口</td>
+<td>不允许</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="http://www.demo.com/a.js;https://www.demo.com/b.js">http://www.demo.com/a.js;https://www.demo.com/b.js</a></td>
+<td>同一域名，不同协议</td>
+<td>不允许</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="http://www.demo.com/a.js;http://127.0.0.1/b.js">http://www.demo.com/a.js;http://127.0.0.1/b.js</a></td>
+<td>域名和域名对应相同ip</td>
+<td>不允许</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="http://www.demo.com/a.js;http://x.demo.com/b.js;http://demo.com/c.js">http://www.demo.com/a.js;http://x.demo.com/b.js;http://demo.com/c.js</a></td>
+<td>主域相同，子域不同</td>
+<td>不允许</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="http://www.demo1.com/a.js;http://www.demo2.com/b.js">http://www.demo1.com/a.js;http://www.demo2.com/b.js</a></td>
+<td>不同域名</td>
+<td>不允许</td>
+</tr>
+</tbody></table>
+<p>比如现在流行微服务，服务器前后端分离的时候，前端服务器和后端服务器都是不同的ip和端口，这时候前后端在分别本地服务器上联调的时候如果不做任何处理，浏览器域名是前端的服务器的ip和端口，前端请求后端服务器的接口直接使用后端服务器的ip和端口就会发生跨域问题。</p>
+<h3 id="出现跨域时的报错"><a href="#出现跨域时的报错" class="headerlink" title="出现跨域时的报错"></a>出现跨域时的报错</h3><p>当跨域时会收到以下错误<br><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98%E6%8A%A5%E9%94%99.png" alt="跨域问题报错.png"></p>
+<h3 id="跨域问题演示"><a href="#跨域问题演示" class="headerlink" title="跨域问题演示"></a>跨域问题演示</h3><p><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98%E6%BC%94%E7%A4%BA.png" alt="跨域问题演示.png"></p>
+<h2 id="安装Nginx"><a href="#安装Nginx" class="headerlink" title="安装Nginx"></a>安装Nginx</h2><p>1.安装包下载地址<br><a target="_blank" rel="noopener" href="http://nginx.org/en/download.html">nginx: download</a></p>
+<p>2.选择版本下载</p>
+<p><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/nginx%E4%B8%8B%E8%BD%BD.png" alt="nginx下载.png"></p>
+<p>3.解压压缩包</p>
+<p><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E8%A7%A3%E5%8E%8B%E5%8E%8B%E7%BC%A9%E5%8C%851.png" alt="解压压缩包1.png"></p>
+<p><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E8%A7%A3%E5%8E%8B%E5%8E%8B%E7%BC%A9%E5%8C%852.png" alt="解压压缩包2.png"></p>
+<p>4，启动nginx</p>
+<p>双击exe程序(如果直接双击exe的话，在cmd界面nginx.exe相关的stop命令会不好使，如果是在cmd界面使用start nginx.exe的情况下，可以使用nginx.exe -s stop关掉nginx)</p>
+<p><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E5%90%AF%E5%8A%A8nginx.png" alt="启动nginx.png"></p>
+<p><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E5%91%BD%E4%BB%A4%E6%93%8D%E4%BD%9C%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9.png" alt="命令操作注意事项.png"></p>
+<p>尝试在浏览器输入localhost默认端口是80。有以下页面代表nginx启动成功</p>
+<p><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E6%88%90%E5%8A%9F%E7%99%BB%E5%BD%95%E5%88%B0nginx.png" alt="成功登录到nginx.png"></p>
+<h2 id="nginx反向代理接口跨域"><a href="#nginx反向代理接口跨域" class="headerlink" title="nginx反向代理接口跨域"></a>nginx反向代理接口跨域</h2><h3 id="什么是反向代理？"><a href="#什么是反向代理？" class="headerlink" title="什么是反向代理？"></a>什么是反向代理？</h3><p>在介绍反向代理之前，先来了解一下正向代理。<br>正向代理： 如果把局域网外的 Internet 想象成一个巨大的资源库，则局域网中的客户端要访问 Internet，则需要通过代理服务器来访问，这种代理服务就称为正向代理。下面是正向代理的原理图。<br>由于工作环境原因，日常工作只能局限于单位的局域网，如果想要访问互联网，怎么办呢？这就需要用到正向代理。本人经常用正向代理来进行上网。<br>特点<br>1.正向代理服务器介于用户和目标服务器之间<br>2.用户非常清楚的知道服务器网址是谁.<br>3.服务器端不清楚真实的用户是谁.<br>4.正向代理一般都是客户端代理.保护了用户的信息.<br>5.正向代理一般都是为了获取网络资源.例如路由器<br><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E6%AD%A3%E5%90%91%E4%BB%A3%E7%90%86.png" alt="正向代理.png"><br>反向代理：　看下面原理图，就一目了然。其实客户端对代理是无感知的，因为客户端不需要任何配置就可以访问，我们只需要将请求发送到反向代理服务器，由反向代理服务器去选择目标服务器获取数据后，在返回给客户端，此时反向代理服务器和目标服务器对外就是一个服务器，暴露的是代理服务器地址，隐藏了真实服务器 IP 地址。<br>特点<br>1.反向代理服务器是介于用户和服务器之间的<br>2.用户直接访问代理服务器,以为代理服务器就是真实的服务器.<br>3.用户不清楚真实的服务器到底是谁.<br>4.反向代理是服务器端代理.保护了真实的服务器信息.<br><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86.png" alt="反向代理.png"><br>正向代理和反向代理的区别，一句话就是：如果我们客户端自己用，就是正向代理。如果是服务器在用，我们用户无感知，就是反向代理。</p>
+<h3 id="使用nginx解决跨域的具体解决方案"><a href="#使用nginx解决跨域的具体解决方案" class="headerlink" title="使用nginx解决跨域的具体解决方案"></a>使用nginx解决跨域的具体解决方案</h3><p>跨域原理： 同源策略是浏览器的安全策略，不是HTTP协议的一部分。服务器端调用HTTP接口只是使用HTTP协议，不会执行JS脚本，不需要同源策略，也就不存在跨越问题。<br>实现思路：想一下，如果我们请求的时候还是用前端的域名，然后有个东西帮我们把这个请求转发到真正的后端域名上，不就避免跨域了吗？这时候，Nginx出场了。<br>下面将一个个演示正确打开方式，但在此之前，有些准备工作要做。为了本地演示跨域，我们需要：<br>1.前端代码（以下前端是vue），地址是<a href="http://localhost:9090。">http://localhost:9090。</a><br>2，后端代码（以下后端是node koa2），地址是<a href="http://localhost:9871。">http://localhost:9871。</a><br>3，修改<a target="_blank" rel="noopener" href="https://www.runoob.com/w3cnote/nginx-setup-intro.html">Nginx配置文件</a>nginx.conf<br><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/nginx%E9%85%8D%E7%BD%AE%E8%B7%AF%E5%BE%84.png" alt="nginx配置路径.png"></p>
+<p>server{<br>    # 监听9099端口<br>    listen 9099;<br>    # #监听地址域名是localhost<br>    <a target="_blank" rel="noopener" href="https://www.itheima.com/news/20210723/162833.html">server_name</a> localhost;<br>    #凡是localhost:9099&#x2F;api这个样子的，都转发到真正的服务端地址<a target="_blank" rel="noopener" href="http://localhost:9871/">http://localhost:9871</a><br>    location ^~ &#x2F;api {&#x2F;&#x2F;反向代理的后端服务器地址，<br>        proxy_pass <a target="_blank" rel="noopener" href="http://localhost:9871/">http://localhost:9871</a>;<br>}<br>    location &#x2F;web {&#x2F;&#x2F;反向代理的前端服务器地址<br>        proxy_pass <a target="_blank" rel="noopener" href="http://localhost:9090/">http://localhost:9090</a>;<br>}</p>
+<p>}</p>
+<p><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E6%B5%8F%E8%A7%88%E5%99%A8%E8%AE%BF%E9%97%AE%E5%9C%B0%E5%9D%80.png" alt="浏览器访问地址.png"><br>&#x2F;&#x2F; 浏览器请求前端服务器的时候直接发nginx这边的域名<a target="_blank" rel="noopener" href="http://localhost:9099/web">http://localhost:9099/web</a> Nginx监听到凡是localhost:9099&#x2F;web这个样子都转转发到实际的前端服务器 <a target="_blank" rel="noopener" href="http://localhost:9090/">http://localhost:9090</a> ，然后Nginx监听到凡是 localhost:9099&#x2F;api 这个样子的，都转发到真正的服务端地址 <a target="_blank" rel="noopener" href="http://localhost:9871/">http://localhost:9871</a> </p>
+<p>下面是前端代码中访问后端接口的相关配置<br>fetch(‘<a target="_blank" rel="noopener" href="http://localhost:9099/api/iframePost">http://localhost:9099/api/iframePost</a>‘, {<br>  method: ‘POST’,<br>  headers: {<br>    ‘Accept’: ‘application&#x2F;json’,<br>    ‘Content-Type’: ‘application&#x2F;json’<br>  },<br>  body: JSON.stringify({<br>    msg: ‘helloIframePost’<br>  })<br>})</p>
+<p>配置完成之后需要在终端中,使用 nginx -s reload 更新我们的配置<br>启动nginx的命令是 start nginx</p>
+<p>测试前端和后端地址</p>
+<p>注意：访问地址已经变更!<br>前端地址： localhost:9099&#x2F;web。通过浏览器访问localhost:9099&#x2F;web 会被nginx监听转发到实际的前端服务器<a target="_blank" rel="noopener" href="http://localhost:9090/">http://localhost:9090</a>;</p>
+<p>后端地址：localhost:9099&#x2F;api。</p>
+<p>浏览器访问确认<br>F12打开调试工具，在请求中，会看到响应头和请求头都会有下面的字段：<br>请求头：<br>GET &#x2F;route&#x2F;xxxxxx<br>Host: host<br>Connection: keep-alive<br>Access-Control-Allow-Origin: *<br>Accept: application&#x2F;json, text&#x2F;plain, <em>&#x2F;</em><br>Authorization: xxxxxxxxxx<br>User-Agent: Mozilla&#x2F;5.0 (Windows NT 10.0; Win64; x64) AppleWebKit&#x2F;537.36 (KHTML, like Gecko) Chrome&#x2F;90.0.4430.85 Safari&#x2F;537.36<br>Origin: <a target="_blank" rel="noopener" href="http://xxx.com/">http://xxx.com</a><br>Referer: <a target="_blank" rel="noopener" href="http://xxx.com/">http://xxx.com</a><br>Accept-Encoding: gzip, deflate<br>Accept-Language: zh-CN,zh;q&#x3D;0.9</p>
+<p>响应头：<br>HTTP&#x2F;1.1 200 OK<br>Server: nginx&#x2F;1.14.1<br>Date: Sat, 24 Apr 2021 15:17:10 GMT<br>Content-Type: application&#x2F;json; charset&#x3D;utf-8<br>Transfer-Encoding: chunked<br>Connection: keep-alive<br>Access-Control-Allow-Origin: *<br>Access-Control-Allow-Methods: GET,POST,OPTIONS,PUT,DELETE<br>Access-Control-Allow-Headers: DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control</p>
+<p>再来一个示例进行说明：<br>http的默认端口是80<br><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E8%B0%83%E7%94%A8%E6%96%B9%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%E6%95%88%E6%9E%9C%E6%BC%94%E7%A4%BA.png" alt="调用方反向代理效果演示.png"><br>Nginx 服务器反向代理配置：<br><img src="/2023/03/05/%E4%BD%BF%E7%94%A8Nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98/%E8%B0%83%E7%94%A8%E6%96%B9Nginx%E9%85%8D%E7%BD%AE.png" alt="调用方Nginx配置.png"><br>注：这种配置a.com的方法可能会访问失败，需要配置host文件进行映射</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本篇介绍了通过nginx配置去解决跨域问题。nginx实现跨域的原理，实际就是把web项目和后端接口项目放到一个域中，这样就不存在跨域问题，然后根据请求地址去请求不同服务器（真正干活的服务器）。<br>最后再说明排查的第一步，看看出现跨域问题时，返回的响应头是否符合规范,重点是下面两个：<br>•	Access-Control-Allow-Origin: *<br>•	Access-Control-Allow-Methods: GET,POST,OPTIONS,PUT,DELETE</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/nginx/" rel="tag"># nginx</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/03/02/Git%E7%9A%84%E5%AD%98%E5%82%A8%E8%BF%87%E7%A8%8B/" rel="prev" title="Git存储过程">
+      <i class="fa fa-chevron-left"></i> Git存储过程
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/03/08/ansible%E8%87%AA%E5%8A%A8%E5%8C%96%E8%BF%90%E7%BB%B4/" rel="next" title="ansible自动化运维">
+      ansible自动化运维 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Nginx%E7%9A%84%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">Nginx的简单介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Nginx%E5%91%BD%E4%BB%A4"><span class="nav-number">1.1.</span> <span class="nav-text">Nginx命令</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E8%B7%A8%E5%9F%9F%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">什么是跨域？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E5%90%8C%E6%BA%90%E7%AD%96%E7%95%A5%EF%BC%9F"><span class="nav-number">2.1.</span> <span class="nav-text">什么是同源策略？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%8C%E6%BA%90%E7%AD%96%E7%95%A5%E5%9C%A8%E9%98%B2%E4%BB%80%E4%B9%88"><span class="nav-number">2.1.1.</span> <span class="nav-text">同源策略在防什么</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">2.2.</span> <span class="nav-text">跨域问题解决方案</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%BA%E7%8E%B0%E8%B7%A8%E5%9F%9F%E6%97%B6%E7%9A%84%E6%8A%A5%E9%94%99"><span class="nav-number">2.3.</span> <span class="nav-text">出现跨域时的报错</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B7%A8%E5%9F%9F%E9%97%AE%E9%A2%98%E6%BC%94%E7%A4%BA"><span class="nav-number">2.4.</span> <span class="nav-text">跨域问题演示</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Nginx"><span class="nav-number">3.</span> <span class="nav-text">安装Nginx</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#nginx%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%E6%8E%A5%E5%8F%A3%E8%B7%A8%E5%9F%9F"><span class="nav-number">4.</span> <span class="nav-text">nginx反向代理接口跨域</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%EF%BC%9F"><span class="nav-number">4.1.</span> <span class="nav-text">什么是反向代理？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8nginx%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F%E7%9A%84%E5%85%B7%E4%BD%93%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">4.2.</span> <span class="nav-text">使用nginx解决跨域的具体解决方案</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">team-manager</p>
+  <div class="site-description" itemprop="description">分享各小组的技术成果</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">team-manager</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

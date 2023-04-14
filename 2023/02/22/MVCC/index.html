@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="MVCC简介MVCC (Multiversion Concurrency Control) 多版本并发控制, 是数据库引擎(如InnoDB)实现中常用的处理读写冲突的手段，目的在于提高数据库高并发场景下的吞吐性能。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MVCC">
+<meta property="og:url" content="http://example.com/2023/02/22/MVCC/index.html">
+<meta property="og:site_name" content="团队技术分享博客">
+<meta property="og:description" content="MVCC简介MVCC (Multiversion Concurrency Control) 多版本并发控制, 是数据库引擎(如InnoDB)实现中常用的处理读写冲突的手段，目的在于提高数据库高并发场景下的吞吐性能。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2023/02/22/MVCC/MVCC.png">
+<meta property="og:image" content="http://example.com/2023/02/22/MVCC/1.png">
+<meta property="og:image" content="http://example.com/2023/02/22/MVCC/2.png">
+<meta property="og:image" content="http://example.com/2023/02/22/MVCC/3.png">
+<meta property="og:image" content="http://example.com/2023/02/22/MVCC/%E6%97%A5%E5%BF%97%E9%93%BE.png">
+<meta property="og:image" content="http://example.com/2023/02/22/MVCC/4.png">
+<meta property="og:image" content="http://example.com/2023/02/22/MVCC/5.png">
+<meta property="og:image" content="http://example.com/2023/02/22/MVCC/%E6%AF%94%E8%BE%83%E8%A7%84%E5%88%99.png">
+<meta property="og:image" content="http://example.com/2023/02/22/MVCC/%E7%A4%BA%E4%BE%8B1.png">
+<meta property="article:published_time" content="2023-02-22T07:13:14.000Z">
+<meta property="article:modified_time" content="2023-04-14T00:55:36.000Z">
+<meta property="article:author" content="team-manager">
+<meta property="article:tag" content="mysql">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/02/22/MVCC/MVCC.png">
+
+<link rel="canonical" href="http://example.com/2023/02/22/MVCC/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MVCC | 团队技术分享博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">团队技术分享博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">东区交付五部技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-schedule">
+
+    <a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/02/22/MVCC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="team-manager">
+      <meta itemprop="description" content="分享各小组的技术成果">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="团队技术分享博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MVCC
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-02-22 15:13:14" itemprop="dateCreated datePublished" datetime="2023-02-22T15:13:14+08:00">2023-02-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-04-14 08:55:36" itemprop="dateModified" datetime="2023-04-14T08:55:36+08:00">2023-04-14</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%90%86%E8%AE%BA/" itemprop="url" rel="index"><span itemprop="name">理论</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <img src="/2023/02/22/MVCC/MVCC.png" class="" title="logo">
+
+<h2 id="MVCC简介"><a href="#MVCC简介" class="headerlink" title="MVCC简介"></a>MVCC简介</h2><p>MVCC (Multiversion Concurrency Control) 多版本并发控制, 是数据库引擎(如InnoDB)实现中常用的处理读写冲突的手段，目的在于提高数据库高并发场景下的吞吐性能。  </p>
+<span id="more"></span>
+
+<h3 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h3><p>在数据库系统中，为了保证数据的一致性和完整性，使用事务来对数据进行操作。然而，当多个事务并发地对同一数据进行读写操作时，就会出现读脏数据或写数据丢失等问题，从而影响数据库的正确性和性能。<br>最早的数据库系统，只有读读之间可以并发，读写，写读，写写都要阻塞。引入多版本之后，<strong>只有写写之间相互阻塞</strong>，其他三种操作都可以并行，这样大幅度提高了InnoDB的并发度。<br>MVCC机制,  通过生成记录的版本链，保留数据项的多个副本,  使得不同事务可以访问不同的版本，从而实现并发读写操作。<br>当MVCC数据库需要更新数据时，不会用新数据覆盖原数据，而是创建该数据的新版本。每个事务看到的版本取决于隔离级别。<br>通过将读操作与写操作相分离，MVCC可以大大提高数据库系统的性能。</p>
+<p>总而言之, MVCC可以无锁的解决事务并发冲突，提高了数据库的并发读写效率。  </p>
+<h2 id="InnoDB中MVCC的实现原理"><a href="#InnoDB中MVCC的实现原理" class="headerlink" title="InnoDB中MVCC的实现原理"></a>InnoDB中MVCC的实现原理</h2><p>MVCC的实现，通过保存数据在某个时间点的快照来实现的。<br>主要依赖于记录中的三个<strong>隐藏字段</strong>、<strong>undolog</strong>、<strong>read view</strong> 来实现。<br>事务每次开启时，都会从数据库获得一个自增长的事务ID，可以从事务ID判断事务的执行先后顺序。这就是事务版本号。</p>
+<hr>
+<h3 id="隐藏字段"><a href="#隐藏字段" class="headerlink" title="隐藏字段"></a>隐藏字段</h3><ul>
+<li><strong>DB_TRX_ID</strong><br>  6字节，<strong>最近修改事物ID</strong>， 记录创建这条记录或最后一次修改该记录的事物id</li>
+<li><strong>DB_ROLL_PTR</strong><br>  7字节，<strong>回滚指针</strong>，指向这条记录的上一个版本， 用于配合undolog， 指向上一个旧版本的DB_ROW_ID</li>
+<li><strong>DB_ROW_ID</strong><br>  6字节， <strong>隐藏主键</strong>，如果数据库没有主键， 那么innodb会自动生成该列</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>acct</th>
+<th>name</th>
+<th>remark</th>
+<th>ROW_ID</th>
+<th>DB_TRX_ID</th>
+<th>ROLL_POINTER</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>001</td>
+<td>徐四</td>
+<td>备注1</td>
+<td>1</td>
+<td>1</td>
+<td>Ox10111011</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="undolog-回滚日志-日志链"><a href="#undolog-回滚日志-日志链" class="headerlink" title="undolog 回滚日志(日志链)"></a>undolog 回滚日志(日志链)</h3><ol>
+<li>事物1： 新插入一条数据<br><img src="/2023/02/22/MVCC/1.png" alt="1.png"></li>
+<li>事物2： 修改name<br><img src="/2023/02/22/MVCC/2.png" alt="2.png"></li>
+<li>事物3： 修改remark<br><img src="/2023/02/22/MVCC/3.png" alt="3.png"></li>
+</ol>
+<p><img src="/2023/02/22/MVCC/%E6%97%A5%E5%BF%97%E9%93%BE.png" alt="日志链.png"></p>
+<hr>
+<h3 id="Read-View-读视图"><a href="#Read-View-读视图" class="headerlink" title="Read View 读视图"></a>Read View 读视图</h3><p>一个视图一个内存结构, 在事物select查询数据时, 会构造一个Read View, 记录版本链的统计信息。</p>
+<h4 id="全局属性"><a href="#全局属性" class="headerlink" title="全局属性"></a><strong>全局属性</strong></h4><ul>
+<li><strong>m_ids</strong>: 当前活跃的事物集合, 用于维护Read VIew生成时刻, 所有未提交的事物(123)</li>
+<li><strong>min_limit_id</strong>: 记录<strong>m_ids</strong>列表中最小事物ID的ID  (1)</li>
+<li><strong>max_limit_id</strong>: Read View生成时刻下一个将被分配事物ID, <strong>版本链头事物id</strong>+1 (5)</li>
+<li><strong>create_limit_id</strong>: 创建该Read View的事物id</li>
+</ul>
+<h4 id="比较规则"><a href="#比较规则" class="headerlink" title="比较规则"></a><strong>比较规则</strong></h4><p>以下面版本链为例, <strong>DB_TRX_ID&#x3D;4</strong></p>
+<ol>
+<li>判断 <strong>DB_TRX_ID &#x3D; create_limit_id</strong>,   4 ≠ 2不满足<br> 等于, 读取自己修改的数据, 可访问<br> 不等于, 则进行下一步判断   </li>
+<li>判断 <strong>DB_TRX_ID &lt; min_limit_id**,  4 &gt; 1不满足<br> 小于, 该版本在ReadView生成前已提交, 则DB_TRX_ID 所在的记录. 对当前事物</strong>可见**<br> 大于等于, 则进行下一步判断    </li>
+<li>判断 <strong>DB_TRX_ID ≥</strong> <strong>max_limit_id</strong>,  4 &lt; 5不满足<br> 大于等于, 则代表DB_TRX_ID所在记录是在Read View生成后才出现的, 对于当前事物<strong>不可见</strong>, 无需第4步继续判断下一个版本<br> ****小于, 则进行下一步判断   </li>
+<li>判断 <strong>DB_TRX_ID</strong>是否在活跃事物中(已满足min_limit_id&lt;<strong>DB_TRX_ID</strong>&lt;max_limit_id)<br> 不在, 则表示在Read View生成前, 就已经commit, 修改的数据当前事务<strong>可见</strong><br> 在, 则表示在Read View生成时, 该事物还是活跃状态, 未commit, 修改的数据当前事务不<strong>可见</strong>, 继续判断下一个版本</li>
+</ol>
+<h4 id="举例"><a href="#举例" class="headerlink" title="举例"></a>举例</h4><p>版本链DB_TRX_ID   4</p>
+<table>
+<thead>
+<tr>
+<th>事务1</th>
+<th>事务2</th>
+<th>事务3</th>
+<th>事务4</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>事务开始</td>
+<td>事务开始</td>
+<td>事务开始</td>
+<td>事务开始</td>
+</tr>
+<tr>
+<td>……</td>
+<td>……</td>
+<td>……</td>
+<td>修改并提交</td>
+</tr>
+<tr>
+<td>进行中</td>
+<td><strong>快照读</strong></td>
+<td>进行中</td>
+<td></td>
+</tr>
+</tbody></table>
+<hr>
+<hr>
+<p><img src="/2023/02/22/MVCC/4.png" alt="图4"></p>
+<img src="5.png" alt="图5" style="zoom: 50%;" />
+
+<p><img src="/2023/02/22/MVCC/%E6%AF%94%E8%BE%83%E8%A7%84%E5%88%99.png" alt="比较规则.png"></p>
+<hr>
+<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><h3 id="MVCC工作的隔离级别"><a href="#MVCC工作的隔离级别" class="headerlink" title="MVCC工作的隔离级别"></a>MVCC工作的隔离级别</h3><p>MVCC只在<code>已提交读</code>（Read Committed）和<code>可重复读</code>（Repeatable Read）两个隔离级别下工作，其他两个隔离级别和MVCC不兼容。<br>因为未提交读，总数读取最新的数据行，而不是读取符合当前事务版本的数据行。<br>而串行化（Serializable）则会对读的所有数据多加锁。  </p>
+<h4 id="在RC、RR隔离级别下的InnoDB快照读有什么不同"><a href="#在RC、RR隔离级别下的InnoDB快照读有什么不同" class="headerlink" title="在RC、RR隔离级别下的InnoDB快照读有什么不同?"></a>在RC、RR隔离级别下的InnoDB快照读有什么不同?</h4><p><strong>RC—读已提交, RR—可重复读</strong></p>
+<p>由于Read View生成的时机不同, 从而造成RC&#x2F;RR快照读的结果不同。(比较规则都相同)</p>
+<ul>
+<li>RC: 每个快照读都会生成并获取最新的Read View</li>
+<li>RR: 同一个事务中的第一个快照读才会创建Read View, 之后的快照读获取的都是同一个Read View</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>事务</th>
+<th>可见</th>
+<th>ReadView</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>RC级别</td>
+<td>可见性比较高，它可以看到已提交的事务的所有修改</td>
+<td><strong>每一条读操作语句都会获取一次 ReadView</strong><br />每次更新之后，都会获取数据库中最新的事务提交状态，<br />也就可以看到最新提交的事务了，即每条语句执行都会更新其可见性视图。</td>
+</tr>
+<tr>
+<td>RR级别</td>
+<td>一个读事务中，不管其他事务对这些数据做了什么修改，以及是否提交，只要自己不提交，查询的数据结果就不会变。</td>
+<td><strong>开启事务时不会获取 ReadView</strong> ，<br />只有发起第一个快照读时才会获取 ReadView 。</td>
+</tr>
+</tbody></table>
+<h4 id="REF-配合演示"><a href="#REF-配合演示" class="headerlink" title="REF: 配合演示"></a>REF: 配合演示</h4><p><img src="/2023/02/22/MVCC/%E7%A4%BA%E4%BE%8B1.png" alt="示例1.png"></p>
+<h3 id="当前读和快照读"><a href="#当前读和快照读" class="headerlink" title="当前读和快照读"></a>当前读和快照读</h3><ul>
+<li><p><strong>当前读</strong></p>
+<p>读取的是<strong>记录的最新版本</strong>, 读取时要保证其他并发事物不能修改当前记录, 会对读取的记录进行加锁。</p>
+<p>像select lock in share mode(共享锁), select for update; update、insert、delete(排他锁)等操作都属于当前读。</p>
+</li>
+<li><p><strong>快照读</strong></p>
+<p>不加锁的非堵塞读, 快照读基于MVCC, 避免加锁操作, 降低开销。</p>
+<p>快照读读到的不一定是数据的最新版本, 可能是之前的历史版本。</p>
+</li>
+</ul>
+<h3 id="悲观锁和MVCC的比较"><a href="#悲观锁和MVCC的比较" class="headerlink" title="悲观锁和MVCC的比较"></a>悲观锁和MVCC的比较</h3><p>悲观锁机制下, 写操作会堵塞读操作, 大量读操作被堵塞, 影响并发性能;</p>
+<p>相对于传统的悲观锁机制，MVCC具有很多优点。<br>对于读操作远多余写操作的场景，MVCC能够保持较高且稳定的并发读能力；<br>对于写操作冲突频繁的场景，MVCC能够减少锁的争用，提高并发性能。<br>此外，MVCC还可以避免死锁问题，提高数据库系统的可靠性。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>MVCC是一种高效的并发控制机制，应用广泛，是数据库系统中不可或缺的一部分。了解MVCC的工作原理和应用场景，对于提高数据库系统的性能和可靠性具有重要的实际意义。</p>
+<p>了解MVCC在不同隔离级别下的差异, 在实际业务场景中, 根据实际选择合适的隔离级别。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/mysql/" rel="tag"># mysql</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/" rel="prev" title="快速开始">
+      <i class="fa fa-chevron-left"></i> 快速开始
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/02/28/%E5%8F%82%E6%95%B0%E7%9A%84%E7%BC%93%E5%AD%98%E4%B8%8E%E5%88%B7%E6%96%B0%E6%9C%BA%E5%88%B6/" rel="next" title="参数的缓存与刷新机制">
+      参数的缓存与刷新机制 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#MVCC%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">MVCC简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%98%E7%82%B9"><span class="nav-number">1.1.</span> <span class="nav-text">优点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#InnoDB%E4%B8%ADMVCC%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">InnoDB中MVCC的实现原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9A%90%E8%97%8F%E5%AD%97%E6%AE%B5"><span class="nav-number">2.1.</span> <span class="nav-text">隐藏字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#undolog-%E5%9B%9E%E6%BB%9A%E6%97%A5%E5%BF%97-%E6%97%A5%E5%BF%97%E9%93%BE"><span class="nav-number">2.2.</span> <span class="nav-text">undolog 回滚日志(日志链)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Read-View-%E8%AF%BB%E8%A7%86%E5%9B%BE"><span class="nav-number">2.3.</span> <span class="nav-text">Read View 读视图</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E5%B1%9E%E6%80%A7"><span class="nav-number">2.3.1.</span> <span class="nav-text">全局属性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%AF%94%E8%BE%83%E8%A7%84%E5%88%99"><span class="nav-number">2.3.2.</span> <span class="nav-text">比较规则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BE%E4%BE%8B"><span class="nav-number">2.3.3.</span> <span class="nav-text">举例</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%A5%E5%85%85"><span class="nav-number">3.</span> <span class="nav-text">补充</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#MVCC%E5%B7%A5%E4%BD%9C%E7%9A%84%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB"><span class="nav-number">3.1.</span> <span class="nav-text">MVCC工作的隔离级别</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9C%A8RC%E3%80%81RR%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8B%E7%9A%84InnoDB%E5%BF%AB%E7%85%A7%E8%AF%BB%E6%9C%89%E4%BB%80%E4%B9%88%E4%B8%8D%E5%90%8C"><span class="nav-number">3.1.1.</span> <span class="nav-text">在RC、RR隔离级别下的InnoDB快照读有什么不同?</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#REF-%E9%85%8D%E5%90%88%E6%BC%94%E7%A4%BA"><span class="nav-number">3.1.2.</span> <span class="nav-text">REF: 配合演示</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BD%93%E5%89%8D%E8%AF%BB%E5%92%8C%E5%BF%AB%E7%85%A7%E8%AF%BB"><span class="nav-number">3.2.</span> <span class="nav-text">当前读和快照读</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%82%B2%E8%A7%82%E9%94%81%E5%92%8CMVCC%E7%9A%84%E6%AF%94%E8%BE%83"><span class="nav-number">3.3.</span> <span class="nav-text">悲观锁和MVCC的比较</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">team-manager</p>
+  <div class="site-description" itemprop="description">分享各小组的技术成果</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">team-manager</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

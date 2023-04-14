@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="什么是注册中心在微服务中服务治理是一个关键的设计要素。 服务治理的需求来自于服务的数量，随着微服务数量的不断增多，服务之间的调用关系会变得纵横交错，以纯人工手动的方式来管理这些微服务以及微服务之间的调用关系是极其复杂的，也是很不可取的，所以需要引入服务治理的功能。 各个微服务需要通过服务治理实现自动化的注册和发现。通常都需要构建一个独立的媒介来进行管理，这个媒介一般被称为服务注册中心。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="注册中心介绍">
+<meta property="og:url" content="http://example.com/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/index.html">
+<meta property="og:site_name" content="团队技术分享博客">
+<meta property="og:description" content="什么是注册中心在微服务中服务治理是一个关键的设计要素。 服务治理的需求来自于服务的数量，随着微服务数量的不断增多，服务之间的调用关系会变得纵横交错，以纯人工手动的方式来管理这些微服务以及微服务之间的调用关系是极其复杂的，也是很不可取的，所以需要引入服务治理的功能。 各个微服务需要通过服务治理实现自动化的注册和发现。通常都需要构建一个独立的媒介来进行管理，这个媒介一般被称为服务注册中心。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/1.png">
+<meta property="og:image" content="http://example.com/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/2.png">
+<meta property="og:image" content="http://example.com/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/3.png">
+<meta property="og:image" content="http://example.com/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/4.png">
+<meta property="og:image" content="http://example.com/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/5.png">
+<meta property="og:image" content="http://example.com/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/6.png">
+<meta property="article:published_time" content="2023-03-28T03:57:00.000Z">
+<meta property="article:modified_time" content="2023-04-14T00:55:36.000Z">
+<meta property="article:author" content="team-manager">
+<meta property="article:tag" content="nacos">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/1.png">
+
+<link rel="canonical" href="http://example.com/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>注册中心介绍 | 团队技术分享博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">团队技术分享博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">东区交付五部技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-schedule">
+
+    <a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="team-manager">
+      <meta itemprop="description" content="分享各小组的技术成果">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="团队技术分享博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          注册中心介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-28 11:57:00" itemprop="dateCreated datePublished" datetime="2023-03-28T11:57:00+08:00">2023-03-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-04-14 08:55:36" itemprop="dateModified" datetime="2023-04-14T08:55:36+08:00">2023-04-14</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%90%86%E8%AE%BA/" itemprop="url" rel="index"><span itemprop="name">理论</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/1.png" alt="1.png"></p>
+<h2 id="什么是注册中心"><a href="#什么是注册中心" class="headerlink" title="什么是注册中心"></a>什么是注册中心</h2><p><code>在微服务中服务治理是一个关键的设计要素。</code></p>
+<p>服务治理的需求来自于服务的数量，随着微服务数量的不断增多，服务之间的调用关系会变得纵横交错，以纯人工手动的方式来管理这些微服务以及微服务之间的调用关系是极其复杂的，也是很不可取的，所以需要引入服务治理的功能。</p>
+<p>各个微服务需要通过服务治理实现<code>自动化的注册和发现</code>。通常都需要构建一个独立的媒介来进行管理，这个媒介一般被称为<code>服务注册中心</code>。</p>
+<span id="more"></span>
+
+<h2 id="注册中心三大角色"><a href="#注册中心三大角色" class="headerlink" title="注册中心三大角色"></a>注册中心三大角色</h2><ul>
+<li>服务提供者（RPC Server）：在启动时，向 Registry 注册自身服务，并向 Registry 定期发送心跳汇报存活状态。</li>
+</ul>
+<ul>
+<li>服务消费者（RPC Client）：在启动时，向 Registry 订阅服务，把 Registry 返回的服务节点列表缓存在本地内存中，并与 RPC Sever 建立连接。</li>
+</ul>
+<ul>
+<li>服务注册中心（Registry）：用于保存 RPC Server 的注册信息，当 RPC Server 节点发生变更时，Registry 会同步变更，RPC Client 感知后会刷新本地 内存中缓存的服务节点列表。</li>
+</ul>
+<p><img src="/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/2.png" alt="2.png"></p>
+<ul>
+<li>服务提供者会将自身提供的服务注册到注册中心，并向注册中心发送心跳信息来证明自己还存活，其中，心跳信息中就会包含服务提供者自身提供的服务信息。</li>
+</ul>
+<ul>
+<li>注册中心会存储服务提供者上报的信息，并通过服务提供者发送的心跳来更新服务提供者最后的存活时间，如果超过一段时间没有收到服务提供者上报的心跳信息，则注册中心会认为服务提供者不可用，会将对应的服务提供者从服务列表中剔除。</li>
+</ul>
+<ul>
+<li>服务消费者会向注册中心订阅自身监听的服务，注册中心会保存服务消费者的信息，也会向服务消费者推送服务提供者的信息。服务消费者从注册中心获取到服务提供者的信息时，会直接调用服务提供者的接口来实现远程调用</li>
+</ul>
+<h2 id="注册中心实现流程"><a href="#注册中心实现流程" class="headerlink" title="注册中心实现流程"></a>注册中心实现流程</h2><p>在实现流程图上，服务提供者和服务消费者可以使用一定的通信机制与注册中心服务器建立连接并维持心跳检测，通过注册中心提供的操作接口分别完成发布和动态更新服务定义、获取制定服务地址列表、取消服务发布、获取服务地址更新等功能。同时，注册中心的服务监听机制确保消费者能够实时监控服务更新状态。</p>
+<p>如下图：</p>
+<p><img src="/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/3.png" alt="3.png"></p>
+<h2 id="注册中心的核心功能"><a href="#注册中心的核心功能" class="headerlink" title="注册中心的核心功能"></a>注册中心的核心功能</h2><p><strong>1. 服务注册与发现</strong></p>
+<ul>
+<li>服务注册：注册中心提供保存服务提供者和服务消费者的相关信息。</li>
+</ul>
+<ul>
+<li>服务发现：也可以理解为服务订阅，服务调用者也就是服务消费者，向注册中心订阅服务提供者的信息，注册中心会向服务消费者推送服务提供者的信息。</li>
+</ul>
+<p><strong>2. 服务配置</strong></p>
+<ul>
+<li>配置订阅：服务的提供者和消费者都可以向注册中心订阅微服务相关的配置信息。</li>
+</ul>
+<ul>
+<li>配置下发：注册中心能够将微服务相关的配置信息主动推送给服务的提供者和消费<br>者。</li>
+</ul>
+<p><strong>3. 服务健康检测</strong></p>
+<ul>
+<li>注册中心会定期检测存储的服务列表中服务提供者的健康状况，例如服务提供者超过一定的时间没有上报心跳信息，则注册中心会认为对应的服务提供者不可用，就会将服务提供者踢出服务列表。</li>
+</ul>
+<p><img src="/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/4.png" alt="4.png"></p>
+<h2 id="服务发布与注册"><a href="#服务发布与注册" class="headerlink" title="服务发布与注册"></a>服务发布与注册</h2><p>服务发布的目的是为了暴露服务访问的入口，是一个通过构建网络连接并启动端口监听请求的过程。<br>服务发布注册流程如下：</p>
+<p><img src="/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/5.png" alt="5.png"></p>
+<p><strong>1.发布启动器：确定服务发布形式并启动发布平台。</strong></p>
+<p>（1）服务发布形式常见的有三种：配置化+API调用+使用注解，各有利弊。</p>
+<ul>
+<li>配置化：通过以XML为代表的配置化工具，服务框架对业务代码零侵入，扩展和修改方便，同时配置信息修改能够实时生效。</li>
+</ul>
+<ul>
+<li>API调用：服务框架对业务代码侵入性较强，修改代码之后需要重新编译才能生效。</li>
+</ul>
+<ul>
+<li><p>注解方式：服务框架对业务代码零侵入，扩展和修改比较方便，但修改配置需要编译才能生效。</p>
+<p>一般我们倾向于使用配置方式，但涉及系统之间集成时，需要使用服务框架中较底层的服务接口，API调用有可能是唯一选择。</p>
+</li>
+</ul>
+<p>（2）发布平台的启动与所选择的发布方式密切相关。  </p>
+<ul>
+<li>使用配置化发布时：通常会借助诸如Spring的容器进行服务实例的配置和管理，容器的正常启动意味着发布平台的启动。</li>
+</ul>
+<ul>
+<li>使用API调用时：简单使用main函数进行启动。</li>
+</ul>
+<ul>
+<li>使用注解方式时：与使用配置化发布启动是类似的。</li>
+</ul>
+<p><strong>2.动态代理</strong></p>
+<p>在实现远程调用时必然会添加动态代理功能，通过动态代理来实现对服务发布进行动态拦截，可以对服务发布行为本身进行封装和抽象，同时也便于扩展和定制化。</p>
+<p>JDK自带的Proxy机制和诸如javassist的字节码编辑库都可以实现动态代理。</p>
+<p><strong>3.发布管理器</strong></p>
+<p>在流程中充当承上启下的门户Facade作用，一方面，获取协议服务器中生成的服务URL信息并发布到注册中心，另一方面，负责通知发布启动器本次发布是否成功。</p>
+<p><strong>4.协议服务器</strong></p>
+<p>是真正实现服务器创建和网络通信的组件，主要作用在于确定发布协议以及根据该协议建立网络连接、并管理心跳、断线重连、端口绑定与释放。常见的协议包括HTTP、RMI、Hessian等。</p>
+<p><strong>5.注册中心</strong></p>
+<p>主要用于保存和更新服务的地址信息。</p>
+<h2 id="服务发现与调用"><a href="#服务发现与调用" class="headerlink" title="服务发现与调用"></a>服务发现与调用</h2><p>较服务发布与注册而言，服务发现与调用是一个导入的过程，基本和服务发布与注册是对称结构流程：</p>
+<p><img src="/2023/03/28/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%BB%8B%E7%BB%8D/6.png" alt="6.png"></p>
+<p><strong>1.调用启动器</strong></p>
+<p>确定服务的调用形式并启动调用平台，与发布启动器一样。</p>
+<p><strong>2.动态代理</strong></p>
+<p>完成本地接口到远程调用的转换，导入服务提供者接口API和服务信息并生成远程服务的本地动态代理对象，将本地API调用转换成远程服务调用并返回调用结果。</p>
+<p><strong>3.调用管理器</strong></p>
+<p>具备缓存功能，保存服务地址的缓存信息。当从注册中心获取服务提供者地址信息时，调用管理器根据需要更新本地缓存，确保在注册中心不可用的情况下，调用启动器仍然可以从本地缓存中获取服务提供者的有效地址信息。</p>
+<p><strong>4.协议客户端</strong></p>
+<p>根据服务调用指定的协议类型创建客户端并发起连接请求，负责与协议服务器进行交互并获取调用结果。</p>
+<p><strong>5.注册中心</strong></p>
+<p>主要用于保存和更新服务的地址信息。</p>
+<h2 id="常见的注册中心"><a href="#常见的注册中心" class="headerlink" title="常见的注册中心"></a>常见的注册中心</h2><p>  能够实现注册中心功能的组件有很多，但是常用的组件大概包含：Zookeeper、Eureka、Consul、Etcd、Nacos等。这里，就给大家简单介绍下这些能够实现注册中心功能的框架或组件。</p>
+<ul>
+<li>Zookeeper</li>
+</ul>
+<p>接触过分布式或者大数据开发的小伙伴应该都知道，Zookeeper是Apache Hadoop的一个子项目，它是一个分布式服务治理框架，主要用来解决应用开发中遇到的一些数据管理问题，例如：分布式集群管理、元数据管理、分布式配置管理、状态同步和统一命名管理等。在高并发环境下，也可以通过Zookeeper实现分布式锁功能。</p>
+<ul>
+<li>Eureka</li>
+</ul>
+<p>Eureka是Netflix开源的SpringCloud中支持服务注册与发现的组件，但是后来闭源了。</p>
+<ul>
+<li>Consul</li>
+</ul>
+<p>Consul 是 HashiCorp 公司推出的开源产品，用于实现分布式系统的服务发现、服务隔离、服务配置，这些功能中的每一个都可以根据需要单独使用，也可以同时使用所有功能。</p>
+<ul>
+<li>Etcd</li>
+</ul>
+<p>Etcd 是一个高度一致的分布式键值存储，它提供了一种可靠的方式来存储需要由分布式系统或机器集群访问的数据。它可以优雅地处理网络分区期间的领导者选举，即使在领导者节点中也可以容忍机器故障。</p>
+<ul>
+<li>Nacos</li>
+</ul>
+<p>这里，我们重点说下Nacos。Nacos是阿里巴巴开源的一款更易于构建云原生应用的支持动态服务发现、配置管理和服务管理的平台，其提供了一组简单易用的特性集，能够快速实现动态服务发现、服务配置、服务元数据及流量管理，主要如下所示。</p>
+<p>服务注册：Nacos Client会通过发送REST请求的方式向Nacos Server注册自己的服务，提供自身的元数据，比如IP地址、端口等信 息。Nacos Server接收到注册请求后，就会把这些元数据信息存储在一个双层的内存Map中。</p>
+<p>服务心跳：在服务注册后，Nacos Client会维护一个定时心跳来持续通知Nacos Server，说明服务一直处于可用状态，防止被剔除。默认5s发送一次心跳。</p>
+<p>服务健康检查：Nacos Server会开启一个定时任务用来检查注册服务实例的健康情况，对于超过15s没有收到客户端心跳的实例会将它的healthy属性置为false(客户端服务发现时不会发现)，如果某个实例超过30秒没有收到心跳，直接剔除该实例(被剔除的实例如果恢复发送心跳则会重新注册)</p>
+<p>服务发现：服务消费者(Nacos Client)在调用服务提供者的服务时，会发送一个REST请求给Nacos Server，获取上面注册的服务清 单，并且缓存在Nacos Client本地，同时会在Nacos Client本地开启一个定时任务定时拉取服务端最新的注册表信息更新到本地存。</p>
+<p>服务同步：Nacos Server集群之间会互相同步服务实例，用来保证服务信息的一致性。</p>
+<h2 id="注册中心对比"><a href="#注册中心对比" class="headerlink" title="注册中心对比"></a>注册中心对比</h2><table>
+<thead>
+<tr>
+<th align="left">类别</th>
+<th align="left">Zookeeper</th>
+<th align="left">Eureka</th>
+<th align="left">Consul</th>
+<th align="left">Etcd</th>
+<th align="left">Nacos</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">CAP定理</td>
+<td align="left">CP</td>
+<td align="left">AP</td>
+<td align="left">CP</td>
+<td align="left">CP</td>
+<td align="left">CP:配置中心 AP:注册中心</td>
+</tr>
+<tr>
+<td align="left">服务健康检查</td>
+<td align="left">(弱)长连接,keepalive</td>
+<td align="left">可配支持</td>
+<td align="left">服务状态,内存,硬盘等</td>
+<td align="left">连接心跳</td>
+<td align="left">传输层(PING或TCP)和应用层(如HTTP、MySQL、用户自定义)的健康检查</td>
+</tr>
+<tr>
+<td align="left">多数据中心</td>
+<td align="left">——</td>
+<td align="left">——</td>
+<td align="left">支持</td>
+<td align="left">——</td>
+<td align="left">支持</td>
+</tr>
+<tr>
+<td align="left">kv存储服务</td>
+<td align="left">支持</td>
+<td align="left">——</td>
+<td align="left">支持</td>
+<td align="left">支持</td>
+<td align="left">支持</td>
+</tr>
+<tr>
+<td align="left">一致性</td>
+<td align="left">Paxos</td>
+<td align="left">——</td>
+<td align="left">Raft</td>
+<td align="left">Raft</td>
+<td align="left">Raft</td>
+</tr>
+<tr>
+<td align="left">使用接口（多语言能力）</td>
+<td align="left">客户端</td>
+<td align="left">http(sidecar)</td>
+<td align="left">支持https和dns</td>
+<td align="left">http&#x2F;grpc</td>
+<td align="left">Nacos支持基于RPC的服务发现。服务提供者使用原生SDK、OpenAPI、或一个独立的Agent</td>
+</tr>
+<tr>
+<td align="left">watch支持</td>
+<td align="left">支持</td>
+<td align="left">支持long polling&#x2F;大部分增量</td>
+<td align="left">全量&#x2F;支持long polling</td>
+<td align="left">支持long polling</td>
+<td align="left">支持long polling&#x2F;大部分增量</td>
+</tr>
+<tr>
+<td align="left">自身监控</td>
+<td align="left">——</td>
+<td align="left">metrics</td>
+<td align="left">:—</td>
+<td align="left">metrics</td>
+<td align="left">:—</td>
+</tr>
+<tr>
+<td align="left">安全</td>
+<td align="left">acl</td>
+<td align="left">——</td>
+<td align="left">acl&#x2F;https</td>
+<td align="left">https支持(弱)</td>
+<td align="left">acl</td>
+</tr>
+</tbody></table>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/nacos/" rel="tag"># nacos</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/03/22/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97-RabbitMQ/" rel="prev" title="消息队列-RabbitMQ">
+      <i class="fa fa-chevron-left"></i> 消息队列-RabbitMQ
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83"><span class="nav-number">1.</span> <span class="nav-text">什么是注册中心</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E4%B8%89%E5%A4%A7%E8%A7%92%E8%89%B2"><span class="nav-number">2.</span> <span class="nav-text">注册中心三大角色</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E5%AE%9E%E7%8E%B0%E6%B5%81%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">注册中心实现流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E7%9A%84%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD"><span class="nav-number">4.</span> <span class="nav-text">注册中心的核心功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E5%8F%91%E5%B8%83%E4%B8%8E%E6%B3%A8%E5%86%8C"><span class="nav-number">5.</span> <span class="nav-text">服务发布与注册</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0%E4%B8%8E%E8%B0%83%E7%94%A8"><span class="nav-number">6.</span> <span class="nav-text">服务发现与调用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E7%9A%84%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83"><span class="nav-number">7.</span> <span class="nav-text">常见的注册中心</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E5%AF%B9%E6%AF%94"><span class="nav-number">8.</span> <span class="nav-text">注册中心对比</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">team-manager</p>
+  <div class="site-description" itemprop="description">分享各小组的技术成果</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">team-manager</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

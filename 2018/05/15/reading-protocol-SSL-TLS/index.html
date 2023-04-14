@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="本篇主要的内容是: 理解SSL和TLS是什么？作用是什么？它们之间的关系。 最近在阅读阿里的Sentinel的代码，在了解客户端和Dashboard的hearbeat与command时，看到了一段创建Socket的代码，这段代码大意是按照通信协议(HTTP&#x2F;HTTPS)创建Socket，后续心跳检测和交互通过socket来通信。在创建HTTPS的Socket的代码片段中：SSLCon">
+<meta property="og:type" content="article">
+<meta property="og:title" content="reading-protocol-SSL-TLS">
+<meta property="og:url" content="http://example.com/2018/05/15/reading-protocol-SSL-TLS/index.html">
+<meta property="og:site_name" content="团队技术分享博客">
+<meta property="og:description" content="本篇主要的内容是: 理解SSL和TLS是什么？作用是什么？它们之间的关系。 最近在阅读阿里的Sentinel的代码，在了解客户端和Dashboard的hearbeat与command时，看到了一段创建Socket的代码，这段代码大意是按照通信协议(HTTP&#x2F;HTTPS)创建Socket，后续心跳检测和交互通过socket来通信。在创建HTTPS的Socket的代码片段中：SSLCon">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2018/05/15/reading-protocol-SSL-TLS/handshake.gif">
+<meta property="og:image" content="http://example.com/2018/05/15/reading-protocol-SSL-TLS/ssl-handshake.png">
+<meta property="og:image" content="http://example.com/2018/05/15/reading-protocol-SSL-TLS/session-id.png">
+<meta property="og:image" content="http://example.com/2018/05/15/reading-protocol-SSL-TLS/session-ticket.png">
+<meta property="article:published_time" content="2018-05-15T07:47:27.000Z">
+<meta property="article:modified_time" content="2023-04-14T00:55:36.000Z">
+<meta property="article:author" content="team-manager">
+<meta property="article:tag" content="HTTPS">
+<meta property="article:tag" content="协议">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2018/05/15/reading-protocol-SSL-TLS/handshake.gif">
+
+<link rel="canonical" href="http://example.com/2018/05/15/reading-protocol-SSL-TLS/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>reading-protocol-SSL-TLS | 团队技术分享博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">团队技术分享博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">东区交付五部技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-schedule">
+
+    <a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2018/05/15/reading-protocol-SSL-TLS/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="team-manager">
+      <meta itemprop="description" content="分享各小组的技术成果">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="团队技术分享博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          reading-protocol-SSL-TLS
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-05-15 15:47:27" itemprop="dateCreated datePublished" datetime="2018-05-15T15:47:27+08:00">2018-05-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-04-14 08:55:36" itemprop="dateModified" datetime="2023-04-14T08:55:36+08:00">2023-04-14</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%8D%8F%E8%AE%AE/" itemprop="url" rel="index"><span itemprop="name">协议</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <img src="/2018/05/15/reading-protocol-SSL-TLS/handshake.gif" class="">
+
+<p>本篇主要的内容是: 理解<code>SSL</code>和<code>TLS</code>是什么？作用是什么？它们之间的关系。</p>
+<p>最近在阅读阿里的Sentinel的代码，在了解客户端和Dashboard的hearbeat与command时，看到了一段创建Socket的代码，这段代码大意是按照通信协议(HTTP&#x2F;HTTPS)创建Socket，后续心跳检测和交互通过socket来通信。在创建HTTPS的Socket的代码片段中：<code>SSLContext.getInstance(&quot;TLS&quot;)</code>引起了我的好奇，于时想了解一下<code>TLS</code>到底时什么，在了解<code>TLS</code>的过程中，再次加深了一下HTTPS的对于消息加密的理解。</p>
+<span id="more"></span>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p><code>SSL</code>和<code>TLS</code>都属于加密协议，HTTPS为了保证通信的安全对消息的密钥进行了加密。它作于与客户端与服务端进行HTTPS通信的四次握手阶段。<code>TLS</code>可以看作是<code>SSL</code>的升级版本。</p>
+<h2 id="主要内容"><a href="#主要内容" class="headerlink" title="主要内容"></a>主要内容</h2><p>在阅读了阮一峰老师的两篇文章<a target="_blank" rel="noopener" href="https://www.ruanyifeng.com/blog/2014/02/ssl_tls.html">《SSL&#x2F;TLS协议运行机制的概述》</a>、<a target="_blank" rel="noopener" href="https://www.ruanyifeng.com/blog/2014/09/illustration-ssl.html">《图解SSL&#x2F;TLS协议》</a>之后，生产了以下的笔记内容。</p>
+<h3 id="SSL-Handshake-握手阶段"><a href="#SSL-Handshake-握手阶段" class="headerlink" title="SSL Handshake 握手阶段"></a>SSL Handshake 握手阶段</h3><img src="/2018/05/15/reading-protocol-SSL-TLS/ssl-handshake.png" class="">
+
+<ol>
+<li>SSL(Secure Sockets Layer, 安全套接字协议)与TLS(TransportLayerSecurity, 安全传输层)所解决的问题：防窃听(加密传播)、防篡改(校验机制)、防冒充(身份证书)。</li>
+<li>SSL与TLS的历史：SSL是由网景(NetScape)公司1994年设计的，历经3个版本1.0(1994)、2.0(1995)、3.0(1996)。1999年互联网标准化组织(ISOC)接替了网景发布了SSL的升级版TLS 1.0。后续发布了1.1(2006)、1.2(2008)、1.2修正版(2011)。TLS的三个版本也被标注为SSL3.1、SSL3.2、SSL3.3。</li>
+<li>SSL和TLS作用与建立连接阶段，客户端首先发起连接请求，通过4次握手生成3个随机数，用3个随机数生成用于加密报文的<code>对话密钥</code>(对称加密报文)。服务器通过公钥仅对<code>对话密钥</code>进行加密，而不对报文进行加密，来减少运算耗时。</li>
+<li>客户端首先发起握手请求，并生成第一个随机数(明文可见),服务端回应并生成第二个随机数(明文可见)，客户端收到回执后再次生成第三个随机数(用服务端公钥加密不可见)发给服务端，最后客户端和服务端通过三个随机数生成最终的<code>会话密钥</code>。</li>
+<li>为了保证公钥不被篡改，公钥放到了服务端的证书里。只要证书是可信的，公钥就是可信的。</li>
+<li>四次握手的过程中客户端与服务端也商定了加密方式，比如RSA公钥加密。</li>
+</ol>
+<h3 id="Session恢复"><a href="#Session恢复" class="headerlink" title="Session恢复"></a>Session恢复</h3><p>握手阶段用来建立SSL连接。如果出于某种原因，对话中断，就需要重新握手。这时有两种方法可以恢复原来的session：一种叫做session ID，另一种叫做session ticket。</p>
+<h4 id="Session-ID"><a href="#Session-ID" class="headerlink" title="Session ID"></a>Session ID</h4><img src="/2018/05/15/reading-protocol-SSL-TLS/session-id.png" class="">
+
+<p>session ID是指客户端给出session ID，服务器确认该编号存在，双方就不再进行握手阶段剩余的步骤，而直接用已有的对话密钥进行加密通信，它的缺点在于session ID往往只保留在一台服务器上。所以，如果客户端的请求发到另一台服务器，就无法恢复对话。</p>
+<h4 id="Session-Ticket"><a href="#Session-Ticket" class="headerlink" title="Session Ticket"></a>Session Ticket</h4><img src="/2018/05/15/reading-protocol-SSL-TLS/session-ticket.png" class="">
+
+<p>session ticket是指客户端不再发送session ID，而是发送一个服务器在上一次对话中发送过来的session ticket。这个session ticket是加密的，只有服务器才能解密，其中包括本次对话的主要信息，比如对话密钥和加密方法。当服务器收到session ticket以后，解密后就不必重新生成对话密钥了。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/HTTPS/" rel="tag"># HTTPS</a>
+              <a href="/tags/%E5%8D%8F%E8%AE%AE/" rel="tag"># 协议</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/04/19/markdown-learning/" rel="prev" title="Markdown学习">
+      <i class="fa fa-chevron-left"></i> Markdown学习
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/05/15/git-learning/" rel="next" title="Git学习">
+      Git学习 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E5%86%85%E5%AE%B9"><span class="nav-number">2.</span> <span class="nav-text">主要内容</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SSL-Handshake-%E6%8F%A1%E6%89%8B%E9%98%B6%E6%AE%B5"><span class="nav-number">2.1.</span> <span class="nav-text">SSL Handshake 握手阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Session%E6%81%A2%E5%A4%8D"><span class="nav-number">2.2.</span> <span class="nav-text">Session恢复</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-ID"><span class="nav-number">2.2.1.</span> <span class="nav-text">Session ID</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Session-Ticket"><span class="nav-number">2.2.2.</span> <span class="nav-text">Session Ticket</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">team-manager</p>
+  <div class="site-description" itemprop="description">分享各小组的技术成果</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">team-manager</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="本章的主要内容是：指导大家如何快速的创建并发布一篇文章。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="快速开始">
+<meta property="og:url" content="http://example.com/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/index.html">
+<meta property="og:site_name" content="团队技术分享博客">
+<meta property="og:description" content="本章的主要内容是：指导大家如何快速的创建并发布一篇文章。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/get-started.jpg">
+<meta property="og:image" content="http://example.com/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/gitlab-pages.jpg">
+<meta property="og:image" content="http://example.com/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/hexo.jpg">
+<meta property="og:image" content="http://example.com/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/hexo-s.jpg">
+<meta property="og:image" content="http://example.com/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/hexo-new.jpg">
+<meta property="og:image" content="http://example.com/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/hexo-md.jpg">
+<meta property="article:published_time" content="2023-02-22T07:13:14.000Z">
+<meta property="article:modified_time" content="2023-04-14T00:55:36.000Z">
+<meta property="article:author" content="team-manager">
+<meta property="article:tag" content="手册">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/get-started.jpg">
+
+<link rel="canonical" href="http://example.com/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>快速开始 | 团队技术分享博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">团队技术分享博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">东区交付五部技术分享</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-schedule">
+
+    <a href="/schedule/" rel="section"><i class="fa fa-calendar fa-fw"></i>日程表</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="team-manager">
+      <meta itemprop="description" content="分享各小组的技术成果">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="团队技术分享博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          快速开始
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-02-22 15:13:14" itemprop="dateCreated datePublished" datetime="2023-02-22T15:13:14+08:00">2023-02-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-04-14 08:55:36" itemprop="dateModified" datetime="2023-04-14T08:55:36+08:00">2023-04-14</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%B8%AE%E5%8A%A9/" itemprop="url" rel="index"><span itemprop="name">帮助</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <img src="/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/get-started.jpg" class="">
+
+<p>本章的主要内容是：指导大家如何快速的创建并发布一篇文章。</p>
+<span id="more"></span>
+
+<h2 id="搭建简介"><a href="#搭建简介" class="headerlink" title="搭建简介"></a>搭建简介</h2><p>该博客系统使用hexo框架+nextT主题搭建的，部署在阿里云服务器上自建的<a target="_blank" rel="noopener" href="http://47.95.10.124:8088/">GitLab</a>上。</p>
+<p>hexo搭建的博客页面是一个静态的页面，不支持在线编辑和上传文章。所以如果要发布一篇文章的话，需要把博客源码下载到自己的本地笔记本上，通过hexo命令进行文章的创建和发布。所以借助GitLab来管理大家的对博客源码的提交。</p>
+<p>博客源码推送到GitLab远程仓库的dev分支后，通过gitlab-ci.yml中配置的脚本自动执行编译，编译后在仓库目录下生成public文件，public文件中存放的就是博客的静态页面。最后通过nginx配置监听4000端口来访问public目录下的index.html页面。</p>
+<blockquote>
+<p>NOTE : 为何不用<a target="_blank" rel="noopener" href="https://docs.gitlab.cn/jh/administration/pages/index.html">GitLab-Pages</a>?<br>原因是 : GitLab-Pages 的前提是需要有个域名并配置一个通配符DNS 记录.<br><img src="/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/gitlab-pages.jpg" alt="gitlab-pages.jpg"></p>
+</blockquote>
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>在开始创作文章之前，需要先获取博客源码并且在本地电脑上搭建开发环境。</p>
+<ol>
+<li><p>博客是通过hexo框架搭建的，所以在创作文章前需要先在本地电脑安装hexo。安装文档连接： <a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/docs/">https://hexo.io/zh-cn/docs/</a>。我们强烈建议永远安装最新版本的 hexo，以及 推荐的 Node.js 版本。<br><img src="/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/hexo.jpg" alt="hexo.jpg"></p>
+</li>
+<li><p>博客源码是托管在自建的GitLab仓库中的，所以如果要新增内容就需要先<a target="_blank" rel="noopener" href="http://47.95.10.124:8088/users/sign_up">注册git账号</a>。注册好之后通知管理员开通仓库访问权限。</p>
+</li>
+<li><p>进入仓库后，把博客源码clone到自己本地电脑里，切换到dev分支。因为博客的源码是在dev分支，main分支是源码编译后的静态页面。</p>
+</li>
+<li><p>源码下载到本地后，cd 到源码根录下，执行<code>hexo s</code> 命令就可以在本地进行博客服务的启动，网文地址为：<code>http://localhost:4000/</code>。<br><img src="/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/hexo-s.jpg" alt="hexo-s.jpg"></p>
+</li>
+</ol>
+<h2 id="文章创作"><a href="#文章创作" class="headerlink" title="文章创作"></a>文章创作</h2><p>准备工作完成后，就可以进行文章的创作。文章的创作涉及文章新建、删除、预览、资源管理、markdown语法等问题，这里以名为<code>演示</code>的这篇文章的创建给大家举例。</p>
+<blockquote>
+<p>Tips: 建议大家使用<a target="_blank" rel="noopener" href="https://code.visualstudio.com/">vscode</a>编辑器来编写文章比较方便</p>
+</blockquote>
+<ol>
+<li><p>在博客源代码dev分支的根目录下输入命令：<code>hexo new 快速开始</code> 来快速新建文章。该命令会在项目的source&#x2F;_posts目录下创建<code>演示.md</code>文件和同名的文件夹，<code>演示.md</code>文件就是用来编写文章的，同名文件夹是用来存放文章里面要用到的图片资源。<br><img src="/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/hexo-new.jpg" alt="hexo-new.jpg"></p>
+</li>
+<li><p>在<code>演示.md</code>中就可以进行文章的编写了，文章编写要遵循以下几点规范：</p>
+</li>
+</ol>
+<blockquote>
+<ul>
+<li>文章要标注作者、日期、归类、标签</li>
+<li>文章要有首页图片和概要介绍，图片的位置和概要介绍放置在<code>&lt;!-- more --&gt;</code> 标签之前</li>
+<li>文章的基本层次结构为： <code>概要</code>、<code>内容</code>、<code>总结</code></li>
+<li>文章不要出现一级标题<code>#</code>, 要从二级标题开始<code>##</code></li>
+<li>样例图片如下：<img src="/2023/02/22/%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B/hexo-md.jpg" alt="hexo-md.jpg"></li>
+</ul>
+</blockquote>
+<ol start="3">
+<li><p>文章在创作过程中可以通过命令<code>hexo s</code> 来预览，以方便及时调整排版。</p>
+</li>
+<li><p>在创作文章时图片的插入是经常会使用的, 图片要保存在文章同名文件夹下，在文章中插入时可以用<code>![hexo-new.jpg](hexo-new.jpg)</code>的方式来实现(hexo-new是我的图片名称)。</p>
+</li>
+<li><p>文章若要删除，或者重命名时，需要把同名的文件夹也一并删除或重命名。</p>
+</li>
+<li><p>项目的.gitlab-ci.yml文件不要随便修改。</p>
+</li>
+</ol>
+<h2 id="文章发布"><a href="#文章发布" class="headerlink" title="文章发布"></a>文章发布</h2><p>文章创作完成后，在本地先通过<code>hexo s</code>进行预览。确认没有问题后就可以把代码提交push到GitLab的远程仓库了。推送成功后稍等片刻，等待CI自动编译完成，就可以通过网址：<a target="_blank" rel="noopener" href="http://47.95.10.124:4000/">http://47.95.10.124:4000/</a> 来访问自己新发布的文章了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>博客文章的创建和发布还是比较方便的，开发人员只需要把它当作普通的git项目进行开发维护就可以。所以编写博客的前提条件是要注册一个git账户并赋予仓库的访问权限。比较麻烦的是开发人员需要在本地搭建nodejs环境，这对于后端开发的同事来说是比较陌生的领域，不过好在这些都不是太复杂。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%89%8B%E5%86%8C/" rel="tag"># 手册</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/09/11/maven-learning/" rel="prev" title="Maven基础">
+      <i class="fa fa-chevron-left"></i> Maven基础
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/02/22/MVCC/" rel="next" title="MVCC">
+      MVCC <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%90%AD%E5%BB%BA%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">搭建简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="nav-number">2.</span> <span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E7%AB%A0%E5%88%9B%E4%BD%9C"><span class="nav-number">3.</span> <span class="nav-text">文章创作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E7%AB%A0%E5%8F%91%E5%B8%83"><span class="nav-number">4.</span> <span class="nav-text">文章发布</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">team-manager</p>
+  <div class="site-description" itemprop="description">分享各小组的技术成果</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">team-manager</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
